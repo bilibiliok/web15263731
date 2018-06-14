@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>智慧校园系统</title>
+  <link rel="stylesheet" href="bootstrap-3.3.7-dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.css">
+  <script type="text/javascript" src="js/jquery-3.0.0.min.js"></script>
+	<script type="text/javascript" src="bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
+
+	
+
+	<script type="text/javascript" src="js/vue.js"></script>
+
+	<script type="text/javascript" src="js/vue-router-3.0.1.js"></script>
+  <style>
+     body{
+    padding-top: 1em;
+    overflow-x: hidden;
+
+    
+  }
+  .top-btns{
+    margin-top: .5em
+  }
+  .tbl-content th{
+    text-align: center;
+  }
+  </style>
+  <style>
+	 
+    ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .app {
+      display: flex;
+      flex-direction: column;
+      position: absolute;
+      width: 100%;
+      top:0;
+      bottom: 0;
+    }
+    .header {
+      height: 80px;
+      line-height: 80px;
+      font-size: 24px;
+      font-weight: bold;
+      border-bottom: 1px solid #ccc;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+    }
+    .content > .left {
+      border-right: 1px solid #ccc;
+      width: 180px;
+    }
+    .content > .left > .left-nav {
+      text-align: center;
+    }
+    .content > .left > .left-nav > li{
+      line-height: 3em;
+      height: 3em;
+      border-bottom: 1px solid #ededed;
+    }
+
+    .content > .right {
+      flex: 1;
+    }
+    .content > .right > .top {
+      height: 3em;
+      line-height: 3em;
+      border-bottom: 1px solid #ededed;
+      padding: 0 1em;
+    }
+    .content > .right > .center {
+      padding: 0 1em;
+    }
+
+
+    .footer {
+      border-top: 1px solid #ccc;
+      height: 2.5em;
+      line-height: 2.5em;
+      text-align: center;
+    }
+
+  </style>
+  
+</head>
+<body>
+
+  <div class="container-fluid app">
+    <div class="header row">
+      <div class="col-sm-12">
+        智慧校园.作业系统
+      </div>
+    </div>
+    <div class="content row">
+    <div class="left">
+				<ul class="left-nav text-center">
+					<li :class={active:show==1}><a href="javascript:void(0);" @click="linkTo('/grade');msg='方向管理';show=1;"><i class="fa fa-telegram"></i>方向管理</a></li>
+					<li :class={active:show==2}><a href="javascript:void(0);" @click="linkTo('/clazz');msg='班级管理';show=2;"><i class="fa fa-bookmark"></i>班级管理</a></li>
+					<li :class={active:show==3}><a href="javascript:void(0);" @click="linkTo('/subject');msg='课程管理';show=3;"><i class="fa fa-calendar"></i>课程管理</a></li>
+					<li :class={active:show==4}><a href="javascript:void(0);" @click="linkTo('/homework');msg='作业管理';show=4;"><i class="fa fa-book"></i>作业管理</a></li>
+
+
+
+					
+				</ul>
+				
+			</div>
+      <div class="right">
+        <div class="top"> >二级栏目 </div>
+        <div class="center row">
+         <router-view></router-view>
+        </div>
+      </div>
+    </div>
+    <div class="footer row text-center">
+      <div class="col-sm-12">
+        <address>@copyright:杰普软件</address>
+      </div>
+    </div>
+  </div>
+
+
+	<script>
+		let Grade={
+			template:`
+				<div class="container">
+    <!--按钮-->
+    <div class="row top-btns">
+      <div class="col-sm-3">
+        <!--搜索-->
+        <input type="search" placeholder="请输入关键字" class="form-control">
+      </div>
+      <div class="col-sm-6 col-sm-offset-3 text-right">
+        <!--按钮-->
+        <button class="btn btn-info" v-on:click="toAddGradeDialog">添加</button>
+        <button class="btn btn-warning" @click='batchDeleteGrade'>批量删除</button>
+      </div>
+    </div>
+    <!--表格开始-->
+    <div class="tbl-content">
+    {{gradeList}} <br>
+    {{delIds}}
+      <table class="table table-bordered text-center">
+        <thead>
+          <tr>
+            <th style="width: 80px">编号</th>
+            <th>方向名称</th>
+            <th style="width: 80px">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for='grade in gradeList'>
+            <td> <input type="checkbox" :value='grade.id' v-model='delIds'> </td>
+            <td>{{grade.name}}</td>
+            <td>
+              <a href="javascript:void(0)" @click="toUpdateGradeDialog(grade)"><i class="fa fa-check"></i></a>
+              <a href="javascript:void(0)" @click="deleteGrade(grade.id)"><i class="fa fa-close"></i></a>
+            </td>
+          </tr>
+        </tbody>  
+      </table>     
+    </div>
+    <!--表格结束-->
+
+    <!--模态框开始-->
+    <div id="gradeDialog" class="modal fade" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title">{{gradeDialog.title}}</h4>
+          </div>
+          <div class="modal-body">
+          {{gradeDialog.form}}
+            <form class="form-horizontal">
+              <div class="form-group">
+                <label for="inputEmail3" class="col-sm-2 control-label">方向名称</label>
+                <div class="col-sm-10">
+                  <input v-model="gradeDialog.form.name" type="email" class="form-control" id="inputEmail3" placeholder="grade">
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" v-on:click="closeGradeDialog">Close</button>
+            <button type="button" class="btn btn-primary" v-on:click="addGrade">Save changes</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+     
+
+
+  </div>
+
+			`,
+			data(){
+				return{
+					gradeList:[],
+					delIds:[],
+		
+		//模态框的数据
+					gradeDialog:{
+					form:{
+					id:'',
+					name:'',
+					},
+					title:''
+				  },
+				}
+			},
+			created(){
+		//为了在ajax中访问到的this值为当前vue实例，那么这个回调函数一定是箭头函数
+		this.updateGradeList();
+	},
+	methods:{
+		resetGradeDiaForm(){
+			this.gradeDialog.form={
+				id:'',
+				name:'',
+			}
+		},
+		//更新方向数据
+		updateGradeList(){
+			$.getJSON('http://120.78.164.247:8080/grade/findAll',
+			(data)=>{
+			this.gradeList =data.extend.data;
+		})
+		},
+
+		toAddGradeDialog(){
+			this.gradeDialog.title='添加方向';
+			this.resetGradeDiaForm();
+			$('#gradeDialog').modal('show')
+		},
+		//修改
+		toUpdateGradeDialog(grade){
+			this.gradeDialog.title='修改方向';
+			//将当前行的数据赋值给了form
+			this.gradeDialog.form=grade;
+			$('#gradeDialog').modal('show');
+		},
+		//关闭模态框
+		closeGradeDialog(){
+			$('#gradeDialog').modal('hide');
+
+		},
+
+		batchDeleteGrade(){
+			// if (this.delIds.length>0) {
+			// 	alert(this.delIds)
+			// }else{
+			// 	alert('请重新选择删除数据')
+			// }
+			this.delIds.forEach((item)=>{
+				$.getJSON('http://120.78.164.247:8080/grade/deleteById',{id:item},()=>{
+
+				});
+			});
+			this.updateGradeList();
+		},
+		//保存年级信息
+		addGrade(){
+			//转化为json字符串打印
+			// alert(JSON.stringify(this.gradeDialog.form));
+			$.post('http://120.78.164.247:8080/grade/saveOrUpdate',this.gradeDialog.form,()=>{
+				// alert('保存成功')；
+				this.closeGradeDialog();
+				this.updateGradeList();
+			});
+		}, 
+			deleteGrade(gradeId){
+				
+			var result=confirm('确认删除吗？');
+			if(result){
+				
+				$.get('http://120.78.164.247:8080/grade/deleteById',
+					{id:gradeId},()=>{
+
+					this.updateGradeList();
+				});
+			}
+		},
+	}
+
+		};
+
+		let Clazz = {
+			template:`
+				 <div class="container">
+  	{{clazzList}}
+    <!--按钮-->
+    <div class="row top-btns">
+      <div class="col-sm-3">
+        <!--搜索-->
+        年级:
+        <select name="grade" id="" class="form-control" v-on:change="changeGradeId"  v-model="gradeId">
+        	<!-- <option>请输入</option> -->
+        	<option v-for="grade in gradeList" v-bind:value="grade.id">{{grade.name}}</option>
+        </select>
+      </div>
+      <div class="col-sm-6 col-sm-offset-3 text-right">
+        <!--按钮-->
+        <button class="btn btn-info" @click="toAddClazzDialog" >添加</button>
+        <button class="btn btn-warning" @click="batchDeleteClazz">批量删除</button>
+      </div>
+    </div>
+    <!--表格开始-->
+    <div class="tbl-content">
+   <!--  {{clazzList}} <br>
+    {{delIds}} -->
+      <table class="table table-bordered text-center">
+        <thead>
+          <tr>
+            <th style="width: 80px">编号</th>
+            <th>班级名称</th>
+            <th style="width: 80px">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for='clazz in clazzList' v-bind:value="clazz.id">
+            <td> <input type="checkbox" v-model="delIds" :value="clazz.id"> </td>
+            <td>{{clazz.name}}</td>
+            <td>
+              <a href="javascript:void(0)" @click="toUpdateClazzDialog(clazz)"><i class="fa fa-check"></i></a>
+              <a href="javascript:void(0)" @click="toDeleteClazzDialog(clazz.id)"><i class="fa fa-close"></i></a>
+            </td>
+          </tr>
+        </tbody>  
+      </table>     
+    </div>
+    <!--表格结束-->
+
+    <!--模态框开始-->
+    <div id="clazzDialog" class="modal fade" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title">{{clazzDialog.title}}</h4>
+          </div>
+          <div class="modal-body">
+          {{clazzDialog.form}}
+            <form class="form-horizontal">
+              <div class="form-group">
+                <label for="inputEmail3" class="col-sm-2 control-label">班级名称</label>
+                <div class="col-sm-10">
+                  <input v-model="clazzDialog.form.name" type="email" class="form-control" id="inputEmail3" placeholder="clazz">
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" @click="toCloseClazzDialog">Close</button>
+            <button type="button" class="btn btn-primary" @click="addClazz">Save changes</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+     
+
+
+  </div>
+
+			`,
+			data(){
+				return{
+					gradeId:[],
+					clazzList:[],
+					gradeList:[],
+					clazzId:[],
+					delIds:[],
+					clazzDialog:{
+						form:{
+							gradeId:'',
+							id:'',
+							name:'',
+							
+						},
+						title:'',
+					},
+				}
+			},
+created(){
+		// this.updateList();
+		$.getJSON('http://120.78.164.247:8080/grade/findAll',data=>{	
+
+			this.gradeList = data.extend.data;
+			var currentGradeId =this.gradeList[0].id;
+		$.getJSON('http://120.78.164.247.8080/clazz/findByGradeId',{id:currentGradeId},data=>{
+			this.clazzList=data.extend.data;
+		})
+
+			  });
+
+	},
+	
+	methods:{
+		resetClazzDiaForm(){
+			this.clazzDialog.form={
+				gradeId:this.gradeId,
+				id:'',
+				name:'',
+			}
+		},
+
+		changeGradeId(){
+			var currentGradeId = this.gradeId;
+			
+			$.getJSON('http://120.78.164.247:8080/clazz/findByGradeId',{id:currentGradeId},result=>{
+				this.clazzList= result.extend.data;
+
+ 			
+ 		});
+			$.getJSON('http://120.78.164.247:8080/subject/findByGradeId',{id:currentGradeId},result=>{
+				this.subjectList= result.extend.data;
+				// console.log(this.clazzList);
+					
+ 			
+ 		});
+
+		},
+
+		updateClazzList(){
+			var currentGradeId=this.gradeId;
+			$.getJSON('http://120.78.164.247:8080/clazz/findByGradeId',{id:currentGradeId},
+			(data)=>{
+			this.clazzList =data.extend.data;
+		});
+		},
+		//打开添加班级
+		toAddClazzDialog(){
+			var currentGradeId = this.gradeId;
+			
+			$.getJSON('http://120.78.164.247:8080/clazz/findByGradeId',{id:currentGradeId},result=>{
+				this.clazzList= result.extend.data;
+
+ 			
+ 		});
+			this.clazzDialog.title="添加班级";
+			this.resetClazzDiaForm();
+			$('#clazzDialog').modal('show');
+
+		},
+		//关闭添加班级
+		toCloseClazzDialog(){
+			$('#clazzDialog').modal('hide');
+		},
+		//
+		toUpdateClazzDialog(clazz){
+			//将当前行的值给form
+			this.clazzDialog.title="修改班级";
+			this.clazzDialog.form=clazz;
+			$('#clazzDialog').modal('show');
+			
+		},
+		//删除当前班级
+		toDeleteClazzDialog(clazzId){
+			var result=confirm('确认删除吗？');
+			if(result){
+				
+				$.get('http://120.78.164.247:8080/clazz/deleteById',
+					{id:clazzId},()=>{
+					this.updateClazzList();
+				});
+			}
+		},
+		//保存或更新信息
+		addClazz(){
+			$.post('http://120.78.164.247:8080/clazz/saveOrUpdate',this.clazzDialog.form,()=>{
+				console.log(this.clazzDialog.form)
+				this.toCloseClazzDialog();
+				this.updateClazzList();
+				$.getJSON('http://120.78.164.247:8080/grade/findAll',data=>{	
+
+			this.gradeList = data.extend.data;
+			var currentGradeId =this.gradeList[0].id;
+		$.getJSON('http://120.78.164.247.8080/clazz/findByGradeId',{id:currentGradeId},data=>{
+			this.clazzList=data.extend.data;
+		})
+
+			  });
+			});
+		},
+
+
+
+
+
+		batchDeleteClazz(){
+
+				this.delIds.forEach((item)=>{
+				$.getJSON('http://120.78.164.247:8080/clazz/deleteById',{id:item},()=>{
+
+				});
+			});
+			this.updateClazzList();
+		},
+	}
+
+
+
+		};
+		let Subject={
+			template:`
+				<div class="container">
+    {{subjectList}}
+    <!--按钮-->
+    <div class="row top-btns">
+      <div class="col-sm-3">
+        <!--搜索-->
+        年级:
+        <select name="grade" id="" class="form-control" v-on:change="changeGradeId"  v-model="gradeId">
+          <!-- <option>请输入</option> -->
+          <option v-for="grade in gradeList" v-bind:value="grade.id">{{grade.name}}</option>
+        </select>
+      </div>
+      <div class="col-sm-6 col-sm-offset-3 text-right">
+        <!--按钮-->
+        <button class="btn btn-info" @click="toAddSubjectDialog" >添加</button>
+        <button class="btn btn-warning" @click="batchDeleteSubject">批量删除</button>
+      </div>
+    </div>
+    <!--表格开始-->
+    <div class="tbl-content">
+   <!--  {{subjectList}} <br>
+    {{delIds}} -->
+      <table class="table table-bordered text-center">
+        <thead>
+          <tr>
+            <th style="width: 80px">编号</th>
+              <th>年级id</th>
+            <th>学科id</th>
+            <th>学科名称</th>
+            <th>description</th>
+            <th style="width: 80px">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for='subject in subjectList' v-bind:value="subject.id">
+            <td> <input type="checkbox" v-model="delIds" :value="subject.id"> </td>
+            <td>{{subject.gradeId}}</td>
+            <td>{{subject.id}}</td>
+            <td>{{subject.name}}</td>
+            <td>{{subject.description}}</td>
+            <td>
+              <a href="javascript:void(0)" @click="toUpdateSubjectDialog(subject)"><i class="fa fa-check"></i></a>
+              <a href="javascript:void(0)" @click="toDeleteSubjectDialog(subject.id)"><i class="fa fa-close"></i></a>
+            </td>
+          </tr>
+        </tbody>  
+      </table>     
+    </div>
+    <!--表格结束-->
+
+    <!--模态框开始-->
+    <div id="subjectDialog" class="modal fade" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title">{{subjectDialog.title}}</h4>
+          </div>
+          <div class="modal-body">
+          {{subjectDialog.form}}
+            <form class="form-horizontal">
+              <div class="form-group">
+                <label for="inputEmail3" class="col-sm-2 control-label">学科名称</label>
+                <div class="col-sm-10">
+                  <input v-model="subjectDialog.form.name" type="email" class="form-control" id="inputEmail3" placeholder="subject">
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" @click="toCloseSubjectDialog">Close</button>
+            <button type="button" class="btn btn-primary" @click="addSubject">Save changes</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+     
+
+
+  </div>
+			`,
+			data(){
+				return{
+		gradeId:[],
+		subjectList:[],
+		gradeList:[],
+		subjectId:[],
+		delIds:[],
+		subjectDialog:{
+			form:{
+				gradeId:'',
+				id:'',
+				name:'',
+				description:'',
+			},
+			title:'',
+		},
+				}
+			},
+			created(){
+		// this.updateList();
+		$.getJSON('http://120.78.164.247:8080/grade/findAll',data=>{	
+
+			this.gradeList = data.extend.data;
+			var currentGradeId =this.gradeList[0].id;
+		$.getJSON('http://120.78.164.247.8080/subject/findByGradeId',{id:currentGradeId},data=>{
+			this.subjectList=data.extend.data;
+		})
+
+			  });
+
+	},
+	
+	methods:{
+		resetSubjectDiaForm(){
+			this.subjectDialog.form={
+				gradeId:this.gradeId,
+				id:'',
+				name:'',
+			}
+		},
+
+		changeGradeId(){
+			var currentGradeId = this.gradeId;
+			
+			$.getJSON('http://120.78.164.247:8080/subject/findByGradeId',{id:currentGradeId},result=>{
+				this.subjectList= result.extend.data;
+
+ 			
+ 		});
+			$.getJSON('http://120.78.164.247:8080/subject/findByGradeId',{id:currentGradeId},result=>{
+				this.subjectList= result.extend.data;
+				// console.log(this.subjectList);
+					
+ 			
+ 		});
+
+		},
+
+		updateSubjectList(){
+			var currentGradeId=this.gradeId;
+			$.getJSON('http://120.78.164.247:8080/subject/findByGradeId',{id:currentGradeId},
+			(data)=>{
+			this.subjectList =data.extend.data;
+		});
+		},
+		//打开添加班级
+		toAddSubjectDialog(){
+			var currentGradeId = this.gradeId;
+			
+			$.getJSON('http://120.78.164.247:8080/subject/findByGradeId',{id:currentGradeId},result=>{
+				this.SubjectList= result.extend.data;
+
+ 			
+ 		});
+			this.subjectDialog.title="添加班级";
+			this.resetSubjectDiaForm();
+			$('#subjectDialog').modal('show');
+
+		},
+		//关闭添加班级
+		toCloseSubjectDialog(){
+			$('#subjectDialog').modal('hide');
+		},
+		//
+		toUpdateSubjectDialog(subject){
+			//将当前行的值给form
+			this.subjectDialog.title="修改班级";
+			this.subjectDialog.form=subject;
+			$('#subjectDialog').modal('show');
+			
+		},
+		//删除当前班级
+		toDeleteSubjectDialog(subjectId){
+			var result=confirm('确认删除吗？');
+			if(result){
+				
+				$.get('http://120.78.164.247:8080/subject/deleteById',
+					{id:subjectId},()=>{
+					this.updateSubjectList();
+				});
+			}
+		},
+		//保存或更新信息
+		addSubject(){
+			$.post('http://120.78.164.247:8080/subject/saveOrUpdate',this.subjectDialog.form,()=>{
+				console.log(this.subjectDialog.form)
+				this.toCloseSubjectDialog();
+				this.updateSubjectList();
+				$.getJSON('http://120.78.164.247:8080/grade/findAll',data=>{	
+
+			this.gradeList = data.extend.data;
+			var currentGradeId =this.gradeList[0].id;
+		$.getJSON('http://120.78.164.247.8080/subject/findByGradeId',{id:currentGradeId},data=>{
+			this.subjectList=data.extend.data;
+		})
+
+			  });
+			});
+		},
+
+
+
+
+
+		batchDeleteSubject(){
+
+				this.delIds.forEach((item)=>{
+				$.getJSON('http://120.78.164.247:8080/subject/deleteById',{id:item},()=>{
+
+				});
+			});
+			this.updateSubjectList();
+		},
+	}
+
+
+		};
+		let Homework={
+			template:`
+				<div class="container">
+  	{{homeworkList}}
+    <!--按钮-->
+    <div class="row top-btns">
+      <div class="col-sm-3">
+        <!--搜索-->
+        学科:
+        <select name="subject" id="" class="form-control" v-on:change="changeSubjectId"  v-model="subjectId">
+        	<!-- <option>请输入</option> -->
+        	<option v-for="subject in subjectList" v-bind:value="subject.id">{{subject.name}}</option>
+        </select>
+      </div>
+      <div class="col-sm-6 col-sm-offset-3 text-right">
+        <!--按钮-->
+        <button class="btn btn-info" @click="toAddHomeworkDialog" >添加</button>
+        <button class="btn btn-warning" @click="batchDeleteHomework">批量删除</button>
+      </div>
+    </div>
+    <!--表格开始-->
+    <div class="tbl-content">
+   <!--  {{homeworkList}} <br>
+    {{delIds}} -->
+      <table class="table table-bordered text-center">
+        <thead>
+          <tr>
+            <th style="width: 80px">编号</th>
+            <th>学科编号</th>
+            <th>作业日期</th>
+            <th>交互日期</th>
+            <th>作业内容</th>
+            <th style="width: 80px">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for='homework in homeworkList' v-bind:value="homework.id">
+            <td> <input type="checkbox" v-model="delIds" :value="homework.id"> </td>
+            <td>{{homework.subjectId}}</td>
+            <td>{{homework.begindate}}</td>
+            <td>{{homework.enddate}}</td>
+            <td>{{homework.content}}</td>
+            <td>
+              <a href="javascript:void(0)" @click="toUpdateHomeworkDialog(homework)"><i class="fa fa-check"></i></a>
+              <a href="javascript:void(0)" @click="toDeleteHomeworkDialog(homework.id)"><i class="fa fa-close"></i></a>
+            </td>
+          </tr>
+        </tbody>  
+      </table>     
+    </div>
+    <!--表格结束-->
+
+    <!--模态框开始-->
+    <div id="homeworkDialog" class="modal fade" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title">{{homeworkDialog.title}}</h4>
+          </div>
+          <div class="modal-body">
+          {{homeworkDialog.form}}
+            <form class="form-horizontal">
+              <div class="form-group">
+                <label for="inputEmail3" class="col-sm-2 control-label">学科</label>
+                <div class="col-sm-10">
+                  <input v-model="homeworkDialog.form.subjectId" type="email" class="form-control" id="inputEmail3" placeholder="homework">
+                </div>
+                <label for="inputEmail3" class="col-sm-2 control-label">作业日期</label>
+                <div class="col-sm-10">
+                  <input v-model="homeworkDialog.form.begindate" type="date" class="form-control" id="inputEmail3" placeholder="homework">
+                </div>
+                <label for="inputEmail3" class="col-sm-2 control-label">交互日期</label>
+                <div class="col-sm-10">
+                  <input v-model="homeworkDialog.form.enddate" type="date" class="form-control" id="inputEmail3" placeholder="homework">
+                </div>
+                <label for="inputEmail3" class="col-sm-2 control-label">作业内容</label>
+                <div class="col-sm-10">
+                  <input v-model="homeworkDialog.form.content" type="textarea" class="form-control" id="inputEmail3" placeholder="请输入作业内容">
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" @click="toCloseHomeworkDialog">Close</button>
+            <button type="button" class="btn btn-primary" @click="addHomework">Save changes</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+  </div>
+			`,
+			data(){
+				return{
+					subjectId:[],
+					homeworkList:[],
+					subjectList:[],
+					homeworkId:[],
+					delIds:[],
+					homeworkDialog:{
+						form:{
+							
+							id:'',
+							begindate:'',
+							enddate:'',
+							content:'',
+							name:'',
+							subjectId:'',
+							
+						},
+						title:'',
+					},
+				}
+			},
+			created(){
+		// this.updateList();
+		$.getJSON('http://120.78.164.247:8080/subject/findAll',data=>{	
+
+			this.subjectList = data.extend.data;
+		var currentSubjectId =this.subjectList[0].id;
+		$.getJSON('http://120.78.164.247.8080/homework/findBySubjectId',{id:currentSubjectId},data=>{
+			this.homeworkList=data.extend.data;
+		})
+
+			  });
+
+	},
+	
+	methods:{
+		resetHomeworkDiaForm(){
+			this.homeworkDialog.form={
+				subjectId:this.subjectId,
+				id:'',
+				name:'',
+			}
+		},
+
+		changeSubjectId(){
+			var currentSubjectId = this.subjectId;
+			
+			$.getJSON('http://120.78.164.247:8080/homework/findBySubjectId',{id:currentSubjectId},result=>{
+				this.homeworkList= result.extend.data;
+
+ 			
+ 		});
+			
+
+		},
+
+		updateHomeworkList(){
+			var currentSubjectId=this.subjectId;
+			$.getJSON('http://120.78.164.247:8080/homework/findBySubjectId',{id:currentSubjectId},
+			(data)=>{
+			this.homeworkList =data.extend.data;
+		});
+		},
+		//打开添加班级
+		toAddHomeworkDialog(){
+			var currentSubjectId = this.subjectId;
+			
+			$.getJSON('http://120.78.164.247:8080/homework/findBySubjectId',{id:currentSubjectId},result=>{
+				this.homeworkList= result.extend.data;
+
+ 			
+ 		});
+			this.homeworkDialog.title="添加班级";
+			this.resetHomeworkDiaForm();
+			$('#homeworkDialog').modal('show');
+
+		},
+		//关闭添加班级
+		toCloseHomeworkDialog(){
+			$('#homeworkDialog').modal('hide');
+		},
+		//
+		toUpdateHomeworkDialog(homework){
+			//将当前行的值给form
+			this.homeworkDialog.title="修改班级";
+			this.homeworkDialog.form=homework;
+			$('#homeworkDialog').modal('show');
+			
+		},
+		//删除当前班级
+		toDeleteHomeworkDialog(homeworkId){
+			var result=confirm('确认删除吗？');
+			if(result){
+				
+				$.get('http://120.78.164.247:8080/homework/deleteById',
+					{id:homeworkId},()=>{
+					this.updateHomeworkList();
+				});
+			}
+		},
+		//保存或更新信息
+		addHomework(){
+			$.post('http://120.78.164.247:8080/homework/saveOrUpdate',this.homeworkDialog.form,()=>{
+				console.log(this.homeworkDialog.form)
+				this.toCloseHomeworkDialog();
+				this.updateHomeworkList();
+				$.getJSON('http://120.78.164.247:8080/subject/findAll',data=>{	
+
+			this.subjectList = data.extend.data;
+			var currentSubjectId =this.subjectList[0].id;
+		$.getJSON('http://120.78.164.247.8080/homework/findBySubjectId',{id:currentSubjectId},data=>{
+			this.homeworkList=data.extend.data;
+		})
+
+			  });
+			});
+		},
+
+
+
+
+
+		batchDeleteHomework(){
+
+				this.delIds.forEach((item)=>{
+				$.getJSON('http://120.78.164.247:8080/homework/deleteById',{id:item},()=>{
+
+				});
+			});
+			this.updateHomeworkList();
+		},
+	}
+};
+
+
+
+
+		let router = new VueRouter({
+			routes:[{
+				path:'/grade',
+				component:Grade,
+			 },{
+				path:'/clazz',
+				component:Clazz,
+			},{
+				path:'/subject',
+				component:Subject,
+			},{
+				path:'/homework',
+				component:Homework,
+			},
+			],
+		});
+		const vm = new Vue({
+			data:{
+				msg:"hello",
+				show:1,
+
+			},
+			methods:{
+				linkTo:function(path){
+					this.$router.push(path);
+				},
+			},
+			router:router,
+		}).$mount(".container-fluid");
+	</script>
+</body>
+</html>
